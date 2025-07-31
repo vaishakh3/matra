@@ -137,6 +137,9 @@ body {
 .input-container {
   margin-bottom: 2rem;
   width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .search-container {
@@ -148,6 +151,7 @@ body {
   padding: 1rem;
   transition: border-color 0.2s;
   width: 100%;
+  gap: 0.75rem;
 }
 
 .search-container:focus-within {
@@ -156,35 +160,38 @@ body {
 
 .search-input {
   flex: 1;
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   outline: none;
-  color: white;
-  font-size: 1rem;
-  padding: 0;
+  color: white !important;
+  font-size: 1rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .search-input::placeholder {
-  color: #6b7280;
+  color: #6b7280 !important;
 }
 
 .generate-button {
-  background-color: white;
-  color: black;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  margin-left: 0.75rem;
+  background-color: white !important;
+  color: black !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
+  font-size: 0.875rem !important;
+  transition: background-color 0.2s !important;
+  font-weight: 500 !important;
+  white-space: nowrap;
+  margin: 0 !important;
 }
 
 .generate-button:hover {
-  background-color: #e5e7eb;
+  background-color: #e5e7eb !important;
 }
 
 .generate-button:disabled {
@@ -284,18 +291,38 @@ body {
   background-color: transparent !important;
 }
 
-.gradio-container input[type="text"], .gradio-container textarea {
+.gradio-container .row {
+  gap: 0.75rem !important;
+}
+
+.search-row {
   background-color: #2a2a2a !important;
   border: 1px solid #3a3a3a !important;
-  color: white !important;
   border-radius: 0.75rem !important;
   padding: 1rem !important;
+  margin: 0 !important;
+  gap: 0.75rem !important;
+}
+
+.search-row:focus-within {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.gradio-container input[type="text"], .gradio-container textarea {
+  background-color: transparent !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   font-size: 1rem !important;
+  margin: 0 !important;
+  box-shadow: none !important;
 }
 
 .gradio-container input[type="text"]:focus, .gradio-container textarea:focus {
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
   box-shadow: none !important;
+  outline: none !important;
 }
 
 .gradio-container input[type="text"]::placeholder, .gradio-container textarea::placeholder {
@@ -310,6 +337,7 @@ body {
   padding: 0.5rem 1rem !important;
   transition: background-color 0.2s !important;
   font-weight: 500 !important;
+  margin: 0 !important;
 }
 
 .gradio-container button:hover {
@@ -375,20 +403,22 @@ with gr.Blocks(title="Matra", css=custom_css) as demo:
     
     # Input section
     with gr.Column(elem_classes=["input-container"]):
-        with gr.Row():
-            prompt_input = gr.Textbox(
-                label="",
-                placeholder="Describe what you want to animate...",
-                lines=1,
-                elem_classes=["search-input"],
-                container=False,
-                scale=4
-            )
-            submit_btn = gr.Button(
-                "Generate", 
-                elem_classes=["generate-button"],
-                scale=1
-            )
+        with gr.HTML('<div class="search-container">'):
+            with gr.Row(elem_classes=["search-row"]):
+                prompt_input = gr.Textbox(
+                    label="",
+                    placeholder="Describe what you want to animate...",
+                    lines=1,
+                    elem_classes=["search-input"],
+                    container=False,
+                    scale=5
+                )
+                submit_btn = gr.Button(
+                    "Generate", 
+                    elem_classes=["generate-button"],
+                    scale=1,
+                    min_width=100
+                )
     
     # Status
     status_box = gr.HTML("", elem_classes=["status"])
