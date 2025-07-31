@@ -1,3 +1,5 @@
 gradio
 groq
 manim
+ffmpeg-python
+python-dotenv
