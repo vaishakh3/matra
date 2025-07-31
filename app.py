@@ -216,14 +216,9 @@ with gr.Blocks(title="Matra", css=custom_css) as demo:
     with gr.Column(elem_classes=["main-container"]):
         
         # Logo
-        gr.HTML("""
-            <div class="logo">
-                <div class="logo-symbol">
-                    <div class="logo-line"></div>
-                </div>
-                <div class="logo-text">Matra</div>
-            </div>
-        """)
+        gr.HTML("""<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <img src="file/Matra.png" alt="Matra Logo" style="height: 40px;">
+        <h1 style="margin: 0; font-size: 1.5em;">Matra</h1></div>""")
         
         # Input
         with gr.Column(elem_classes=["input-container"]):
