@@ -579,12 +579,10 @@ with gr.Blocks(title="Matra - Mathematical Animation Generator", css=custom_css,
     )
 
 # Launch the app
-'''if __name__ == "__main__":
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=int(os.environ.get("PORT", 7860)),
-        favicon_path="Matra.png" if os.path.exists("Matra.png") else None,
-        show_error=True
-    )'''
 
-demo.launch()
+demo.launch(
+    server_name="0.0.0.0",
+    server_port=int(os.environ.get("PORT", 7860)),
+    favicon_path="Matra.png" if os.path.exists("Matra.png") else None,
+    show_error=True
+)
