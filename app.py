@@ -7,6 +7,8 @@ from groq import Groq
 import shutil
 import time
 import dotenv
+import json
+import html
 
 dotenv.load_dotenv()
 
@@ -22,7 +24,7 @@ def get_manim_code(prompt: str, scene_name: str) -> str:
             "content": f"Give python Manim code for: '{prompt}'. Only code, no explanation. No comments. Dont begin with triple quoted ```python. Name the scene class exactly `{scene_name}`. Use Text() instead of Tex() unless strictly necessary."
         }
     ]
-
+    
     response = client.chat.completions.create(
         model="meta-llama/llama-4-maverick-17b-128e-instruct",
         messages=messages,
@@ -31,7 +33,7 @@ def get_manim_code(prompt: str, scene_name: str) -> str:
         top_p=1,
         stream=False
     )
-
+    
     raw_code = response.choices[0].message.content.strip()
     safe_code = strip_non_ascii(raw_code)
     return safe_code
@@ -40,21 +42,22 @@ def run_manim(prompt: str):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     scene_name = f"Scene_{timestamp}"
     filename = f"generated/{scene_name}.py"
+    
     os.makedirs("generated", exist_ok=True)
-
+    
     code = get_manim_code(prompt, scene_name)
-
+    
     with open(filename, "w", encoding="utf-8") as f:
         f.write(code)
-
+    
     # Clean old media
     shutil.rmtree("media/videos", ignore_errors=True)
-
+    
     try:
         subprocess.run(f"manim -ql {filename} {scene_name}", shell=True, check=True)
     except subprocess.CalledProcessError:
         return code, None
-
+    
     video_file = None
     for root, _, files in os.walk("media/videos"):
         for file in files:
@@ -62,402 +65,526 @@ def run_manim(prompt: str):
                 full_path = os.path.join(root, file)
                 video_file = full_path.replace("\\", "/")
                 break
-
+    
     return code, video_file if video_file and os.path.exists(video_file) else None
 
-# Modern UI CSS matching the reference design
+# Clean CSS with proper Gradio styling
 custom_css = """
-/* Import Montserrat font */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
-/* Global styles */
-* {
-  box-sizing: border-box;
+/* Global Styles */
+.gradio-container {
+    background: #1a1a1a !important;
+    color: white !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    min-height: 100vh !important;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #1a1a1a;
-  color: white;
-  min-height: 100vh;
+    background: #1a1a1a !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* Main container */
-.gradio-container {
-  background-color: #1a1a1a !important;
-  color: white !important;
-  min-height: 100vh;
+/* Main Container - Made bigger */
+.main-container {
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    padding: 60px 32px !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
-/* Override Gradio's default styling */
-.gradio-container .contain {
-  max-width: 768px !important;
-  margin: 0 auto !important;
-  padding: 3rem 1.5rem !important;
+/* Logo Section - Made bigger */
+.logo-section {
+    text-align: center !important;
+    margin-bottom: 60px !important;
 }
 
-/* Header/Logo section */
-.matra-header {
-  text-align: center;
-  margin-bottom: 3rem;
+.logo-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 16px !important;
+    margin-bottom: 12px !important;
 }
 
-.matra-logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+.logo-text {
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 40px !important;
+    font-weight: 500 !important;
+    color: white !important;
+    letter-spacing: 0.5px !important;
+    margin: 0 !important;
 }
 
-.matra-logo {
-  width: 32px;
-  height: 32px;
-  filter: invert(1);
+.logo-subtitle {
+    color: #9ca3af !important;
+    font-size: 16px !important;
+    margin: 0 !important;
 }
 
-.matra-title {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 1.875rem;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  margin: 0;
-  color: white;
+/* Input Section Styling */
+.input-section {
+    width: 100% !important;
+    margin-bottom: 40px !important;
 }
 
-.matra-subtitle {
-  color: #9ca3af;
-  font-size: 0.875rem;
-  margin: 0;
+/* Style the input row to look like one container */
+.input-row {
+    background: #2a2a2a !important;
+    border: 1px solid #3a3a3a !important;
+    border-radius: 16px !important;
+    padding: 20px 20px 20px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    transition: border-color 0.2s ease !important;
 }
 
-/* Input section */
-.input-container {
-  margin-bottom: 2rem;
-  width: 100%;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+.input-row:focus-within {
+    border-color: inherit !important;
 }
 
-.search-container {
-  display: flex;
-  align-items: center;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  transition: border-color 0.2s;
-  width: 100%;
-  gap: 0.75rem;
+/* Search icon */
+.search-icon {
+    color: #9ca3af !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
 }
 
-.search-container:focus-within {
-  border-color: rgba(255, 255, 255, 0.2);
+/* Hide default Gradio styling for textbox */
+.input-row .gradio-textbox {
+    background: transparent !important;
+    border: none !important;
+    flex: 1 !important;
 }
 
-.search-input {
-  flex: 1;
-  background: transparent !important;
-  border: none !important;
-  outline: none;
-  color: white !important;
-  font-size: 1rem !important;
-  padding: 0 !important;
-  margin: 0 !important;
+.input-row .gradio-textbox .wrap {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
 }
 
-.search-input::placeholder {
-  color: #6b7280 !important;
+.input-row .gradio-textbox .scroll-hide {
+    background: transparent !important;
+    border: none !important;
 }
 
-.generate-button {
-  background-color: white !important;
-  color: black !important;
-  border: none !important;
-  border-radius: 0.5rem !important;
-  padding: 0.5rem 1rem !important;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem !important;
-  transition: background-color 0.2s !important;
-  font-weight: 500 !important;
-  white-space: nowrap;
-  margin: 0 !important;
+.input-row .gradio-textbox textarea {
+    background: #23272f !important;
+    /* Autofill override for Chrome/Webkit */
+    box-shadow: 0 0 0 1000px #23272f inset !important;
+    -webkit-box-shadow: 0 0 0 1000px #23272f inset !important;
+    -webkit-text-fill-color: #fff !important;
+    transition: background-color 5000s ease-in-out 0s !important;
 }
 
-.generate-button:hover {
-  background-color: #e5e7eb !important;
+/* Autofill override for Chrome/Webkit */
+.input-row .gradio-textbox textarea:-webkit-autofill,
+.input-row .gradio-textbox textarea:-webkit-autofill:focus {
+    box-shadow: 0 0 0 1000px #23272f inset !important;
+    -webkit-box-shadow: 0 0 0 1000px #23272f inset !important;
+    -webkit-text-fill-color: #fff !important;
+    background: #23272f !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+    border: none !important;
+    color: white !important;
+    font-size: 18px !important;
+    resize: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
-.generate-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.input-row .gradio-textbox textarea::placeholder {
+    color: #6b7280 !important;
+    font-size: 18px !important;
 }
 
-/* Status display */
-.status {
-  text-align: center;
-  margin: 1rem 0;
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  width: 100%;
+/* Style the button to be small and inline */
+.input-row .gradio-button {
+    background: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
 }
 
-.status-info {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+.input-row .gradio-button .wrap {
+    background: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0 !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.input-row .gradio-button button {
+    background: white !important;
+    color: black !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.input-row .gradio-button button:hover {
+    background: #e5e7eb !important;
+}
+
+/* Suggestions - Made bigger */
+.suggestions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    margin-top: 20px !important;
+}
+
+.suggestion-chip {
+    background: #2a2a2a !important;
+    border: 1px solid #3a3a3a !important;
+    color: #9ca3af !important;
+    padding: 8px 16px !important;
+    border-radius: 24px !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.suggestion-chip:hover {
+    color: white !important;
+    background: #3a3a3a !important;
+}
+
+/* Status Messages - Made bigger */
+.status-message {
+    text-align: center !important;
+    padding: 20px 32px !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    margin: 20px 0 !important;
+    width: 100% !important;
+}
+
+.status-loading {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: #60a5fa !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
 }
 
 .status-success {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+    background: rgba(34, 197, 94, 0.1) !important;
+    color: #4ade80 !important;
+    border: 1px solid rgba(34, 197, 94, 0.2) !important;
 }
 
 .status-error {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
 }
 
-/* Output container */
-.output-container {
-  margin-top: 2rem;
-  width: 100%;
+/* Video Player - Made bigger */
+.video-container {
+    background: #2a2a2a !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    width: 100% !important;
+    margin-bottom: 20px !important;
 }
 
-/* Animation player */
-.animation-player {
-  background-color: #2a2a2a;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+.video-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 20px !important;
 }
 
-.player-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
+.video-title {
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
 }
 
-.player-title {
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin: 0;
+.video-subtitle {
+    color: #9ca3af !important;
+    font-size: 14px !important;
+    margin: 0 !important;
 }
 
-/* Code display */
-.code-container {
-  background-color: #2a2a2a;
-  border-radius: 0.5rem;
-  padding: 1rem;
+.video-player {
+    width: 100% !important;
+    border-radius: 8px !important;
+    background: #0a0a0a !important;
+    min-height: 400px !important;
 }
 
-.code-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
+/* Code Section - Made bigger */
+.code-section {
+    background: #2a2a2a !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    width: 100% !important;
 }
 
-.code-title {
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin: 0;
+.code-content {
+    background: #1a1a1a !important;
+    color: #e5e7eb !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    padding: 20px !important;
+    overflow-x: auto !important;
+    max-height: 500px !important;
 }
 
-/* Override Gradio specific styles */
-.gradio-container .wrap {
-  background-color: #1a1a1a !important;
+/* Empty State - Made bigger */
+.empty-state {
+    text-align: center !important;
+    padding: 60px 0 !important;
 }
 
-.gradio-container .panel {
-  background-color: #2a2a2a !important;
-  border: 1px solid #3a3a3a !important;
+.empty-title {
+    color: #9ca3af !important;
+    font-size: 22px !important;
+    margin-bottom: 12px !important;
 }
 
-.gradio-container .form {
-  background-color: transparent !important;
+.empty-subtitle {
+    color: #6b7280 !important;
+    font-size: 16px !important;
 }
 
-.gradio-container .row {
-  gap: 0.75rem !important;
+/* Hide Gradio elements */
+footer {
+    display: none !important;
 }
 
-.search-row {
-  background-color: #2a2a2a !important;
-  border: 1px solid #3a3a3a !important;
-  border-radius: 0.75rem !important;
-  padding: 1rem !important;
-  margin: 0 !important;
-  gap: 0.75rem !important;
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block !important;
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid #60a5fa !important;
+    border-radius: 50% !important;
+    border-top-color: transparent !important;
+    animation: spin 1s ease-in-out infinite !important;
+    margin-right: 8px !important;
 }
 
-.search-row:focus-within {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.gradio-container input[type="text"], .gradio-container textarea {
-  background-color: transparent !important;
-  border: none !important;
-  color: white !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  font-size: 1rem !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-}
-
-.gradio-container input[type="text"]:focus, .gradio-container textarea:focus {
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-.gradio-container input[type="text"]::placeholder, .gradio-container textarea::placeholder {
-  color: #6b7280 !important;
-}
-
-.gradio-container button {
-  background-color: white !important;
-  color: black !important;
-  border: none !important;
-  border-radius: 0.5rem !important;
-  padding: 0.5rem 1rem !important;
-  transition: background-color 0.2s !important;
-  font-weight: 500 !important;
-  margin: 0 !important;
-}
-
-.gradio-container button:hover {
-  background-color: #e5e7eb !important;
-}
-
-.gradio-container .accordion {
-  background-color: #2a2a2a !important;
-  border: 1px solid #3a3a3a !important;
-  border-radius: 0.5rem !important;
-}
-
-.gradio-container .accordion summary {
-  background-color: transparent !important;
-  color: white !important;
-  padding: 0.75rem !important;
-}
-
-.gradio-container pre {
-  background-color: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 0.25rem !important;
-  padding: 0.75rem !important;
-  color: #d1d5db !important;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-  font-size: 0.75rem !important;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .gradio-container .contain {
-    padding: 2rem 1rem !important;
-  }
-  
-  .matra-title {
-    font-size: 1.5rem;
-  }
-  
-  .search-container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .generate-button {
-    margin-left: 0;
-    align-self: stretch;
-    justify-content: center;
-  }
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 """
 
-# Create modern UI matching the reference design
-with gr.Blocks(title="Matra", css=custom_css) as demo:
+# Suggestions for prompts
+suggestions = [
+    "Einstein's E=mc²",
+    "Sine wave animation", 
+    "Pythagorean theorem",
+    "Electromagnetic wave",
+    "Derivative visualization"
+]
 
-    # Header/Logo section
-    with gr.Column(elem_classes=["matra-header"]):
-        gr.HTML("""
-        <div class="matra-logo-container">
-            <img src="https://i.ibb.co/VW0H6nM5/Matra.png" alt="Matra Logo" class="matra-logo">
-            <h1 class="matra-title">Matra</h1>
-        </div>
-        <p class="matra-subtitle">AI-powered animation generation</p>
-        """)
+def create_suggestion_chips():
+    """Create clickable suggestion chips HTML"""
+    chips_html = []
+    for suggestion in suggestions:
+        escaped_text = suggestion.replace("'", "\\'")  # escape single quotes for JS
+        visible_text = html.escape(suggestion)  # escape for HTML display
+        onclick_code = (
+            f"const textarea = document.querySelector('textarea');"
+            f"textarea.value='{escaped_text}';"
+            f"textarea.dispatchEvent(new Event('input', {{ bubbles: true }}));"
+        )
+        chip_html = f'<span class="suggestion-chip" onclick="{onclick_code}">{visible_text}...</span>'
+        chips_html.append(chip_html)
     
-    # Input section
-    with gr.Column(elem_classes=["input-container"]):
-        with gr.HTML('<div class="search-container">'):
-            with gr.Row(elem_classes=["search-row"]):
+    return f'<div class="suggestions">{"".join(chips_html)}</div>'
+
+# Create the Gradio interface
+with gr.Blocks(title="Matra - Mathematical Animation Generator", css=custom_css, theme=gr.themes.Base()) as demo:
+    
+    # Main container
+    with gr.Column(elem_classes=["main-container"]):
+        
+        # Logo section
+        gr.HTML("""
+        <div class="logo-section">
+            <div class="logo-container">
+                <img src="https://i.ibb.co/VW0H6nM5/Matra.png" alt="Matra" style="width: 40px; height: 40px; filter: invert(1);">
+                <h1 class="logo-text">Matra</h1>
+            </div>
+            <p class="logo-subtitle">Mathematical animation generator</p>
+        </div>
+        """)
+        
+        # Input section with search icon, input, and button in one row
+        with gr.Column(elem_classes=["input-section"]):
+            with gr.Row(elem_classes=["input-row"]):
+                
+                
+                # Text input
                 prompt_input = gr.Textbox(
                     label="",
-                    placeholder="Describe what you want to animate...",
+                    placeholder="Describe your mathematical animation...",
                     lines=1,
-                    elem_classes=["search-input"],
+                    show_label=False,
                     container=False,
-                    scale=5
+                    scale=4
                 )
+                
+                # Generate button
                 submit_btn = gr.Button(
-                    "Generate", 
-                    elem_classes=["generate-button"],
-                    scale=1,
-                    min_width=100
+                    "▶",
+                    size="sm",
+                    scale=0,
+                    min_width=44
                 )
-    
-    # Status
-    status_box = gr.HTML("", elem_classes=["status"])
-    
-    # Output
-    with gr.Column(elem_classes=["output-container"], visible=False) as output_container:
-        with gr.Column(elem_classes=["animation-player"]):
-            gr.HTML('<h3 class="player-title">Generated Animation</h3>')
-            output_video = gr.Video(label="", show_label=False)
+            
+            # Suggestions
+            gr.HTML(create_suggestion_chips())
         
-        with gr.Accordion("Generated Code", open=False, elem_classes=["code-container"]):
-            output_code = gr.Code(language="python", show_label=False)
+        # Status display
+        status_display = gr.HTML("", elem_classes=["status-message"])
+        
+        # Output section
+        with gr.Column(visible=False) as output_section:
+            # Video player
+            gr.HTML("""
+            <div class="video-container">
+                <div class="video-header">
+                    <div>
+                        <h3 class="video-title">Generated Animation</h3>
+                        <p class="video-subtitle">Mathematical visualization</p>
+                    </div>
+                </div>
+            </div>
+            """)
+            
+            output_video = gr.Video(
+                label="",
+                show_label=False,
+                elem_classes=["video-player"]
+            )
+            
+            # Code section
+            with gr.Accordion("Generated Code", open=False):
+                output_code = gr.Code(
+                    language="python",
+                    show_label=False,
+                    elem_classes=["code-content"]
+                )
+        
+        # Empty state
+        empty_state = gr.HTML("""
+        <div class="empty-state">
+            <div class="empty-title">Ready to create</div>
+            <div class="empty-subtitle">Enter a mathematical concept above and click generate</div>
+        </div>
+        """)
 
-    # Event handler
-    def on_submit(prompt):
+    # Event handlers
+    def generate_animation(prompt):
         if not prompt.strip():
-            return "", None, gr.update(visible=False), gr.update(value='<div class="status status-error">Please enter a prompt</div>')
+            return (
+                gr.update(value='<div class="status-message status-error">Please enter a prompt</div>'),
+                gr.update(visible=False),
+                gr.update(visible=True),
+                "", 
+                None
+            )
         
-        status_html = '<div class="status status-info">Generating animation...</div>'
+        # Show loading state
+        loading_html = '<div class="status-message status-loading"><span class="loading-spinner"></span>Generating animation...</div>'
         
         try:
+            # Update status to loading
+            yield (
+                gr.update(value=loading_html),
+                gr.update(visible=False),
+                gr.update(visible=False),
+                "",
+                None
+            )
+            
+            # Generate the animation
             code, video = run_manim(prompt)
-            if video:
-                status_html = '<div class="status status-success">Animation ready!</div>'
-                return code, video, gr.update(visible=True), gr.update(value=status_html)
+            
+            if video and os.path.exists(video):
+                success_html = '<div class="status-message status-success">✅ Animation generated successfully!</div>'
+                yield (
+                    gr.update(value=success_html),
+                    gr.update(visible=True),
+                    gr.update(visible=False),
+                    code,
+                    video
+                )
             else:
-                status_html = '<div class="status status-error">Rendering failed</div>'
-                return code, None, gr.update(visible=True), gr.update(value=status_html)
+                error_html = '<div class="status-message status-error">❌ Failed to generate video. Check the code for errors.</div>'
+                yield (
+                    gr.update(value=error_html),
+                    gr.update(visible=True),
+                    gr.update(visible=False),
+                    code,
+                    None
+                )
+                
         except Exception as e:
-            status_html = f'<div class="status status-error">Error: {str(e)}</div>'
-            return "", None, gr.update(visible=False), gr.update(value=status_html)
+            error_html = f'<div class="status-message status-error">❌ Error: {str(e)}</div>'
+            yield (
+                gr.update(value=error_html),
+                gr.update(visible=False),
+                gr.update(visible=True),
+                "",
+                None
+            )
 
+    # Connect the button click
     submit_btn.click(
-        fn=on_submit,
-        inputs=prompt_input,
-        outputs=[output_code, output_video, output_container, status_box]
+        fn=generate_animation,
+        inputs=[prompt_input],
+        outputs=[status_display, output_section, empty_state, output_code, output_video]
+    )
+    
+    # Also trigger on Enter key
+    prompt_input.submit(
+        fn=generate_animation,
+        inputs=[prompt_input],
+        outputs=[status_display, output_section, empty_state, output_code, output_video]
     )
 
-demo.launch(server_name="0.0.0.0",
-            server_port=int(os.environ.get("PORT", 7860)),
-            favicon_path="Matra.png",
-            pwa=True)
+# Launch the app
+'''if __name__ == "__main__":
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.environ.get("PORT", 7860)),
+        favicon_path="Matra.png" if os.path.exists("Matra.png") else None,
+        show_error=True
+    )'''
+
+demo.launch()
