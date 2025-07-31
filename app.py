@@ -211,8 +211,8 @@ custom_css = """
 """
 
 # Create minimal UI
-with gr.Blocks(css=custom_css) as demo:
-    
+with gr.Blocks(title="Matra", css=custom_css) as demo:
+
     with gr.Column(elem_classes=["main-container"]):
         
         # Logo
@@ -269,4 +269,7 @@ with gr.Blocks(css=custom_css) as demo:
         outputs=[output_code, output_video, output_container, status_box]
     )
 
-demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 7860)), pwa=True)
+demo.launch(server_name="0.0.0.0",
+            server_port=int(os.environ.get("PORT", 7860)),
+            favicon_path="Matra.png",
+            pwa=True)
