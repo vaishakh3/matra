@@ -217,7 +217,7 @@ with gr.Blocks(title="Matra", css=custom_css) as demo:
         
         # Logo
         gr.HTML("""<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-        <img src="./Matra.png" alt="Matra Logo" style="height: 40px;">
+        <img src="https://i.ibb.co/VW0H6nM/Matra.png" alt="Matra Logo" style="height: 40px;">
         <h1 style="margin: 0; font-size: 1.5em;">Matra</h1></div>""")
         
         # Input
