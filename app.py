@@ -269,4 +269,4 @@ with gr.Blocks(css=custom_css) as demo:
         outputs=[output_code, output_video, output_container, status_box]
     )
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 7860)))
