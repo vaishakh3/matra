@@ -2,6 +2,7 @@
 
 ![Matra Banner](https://i.ibb.co/VW0H6nM5/Matra.png)
 
+
 **Mathematical Animation Generator**
 
 Matra is an AI-powered tool that generates animated math visualizations from natural language prompts using the Manim engine. It's like having your own personal animation studio for math content creators, educators, and learners.
