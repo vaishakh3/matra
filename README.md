@@ -1,5 +1,7 @@
 # Matra ✨
 
+![Matra Banner](https://i.ibb.co/VW0H6nM5/Matra.png)
+
 **Mathematical Animation Generator**
 
 Matra is an AI-powered tool that generates animated math visualizations from natural language prompts using the Manim engine. It's like having your own personal animation studio for math content creators, educators, and learners.
@@ -41,7 +43,6 @@ Try it now: [https://matra.dev](https://matra.dev)
 
 * Python 3.10+
 * Manim CE
-* Node.js (for frontend if modifying)
 * FFmpeg
 
 ### Backend Setup
@@ -77,7 +78,7 @@ python matra.py
 | UI         | Gradio + TailwindCSS-style CSS               |
 | AI         | Groq + LLaMA 4 (via `groq` Python SDK)       |
 | Rendering  | [Manim](https://www.manim.community/)        |
-| Deployment | Vercel (frontend), HF Spaces/local (backend) |
+| Deployment | Render 
 
 ---
 
@@ -86,12 +87,6 @@ python matra.py
 * Generated Manim code is not always perfect (LLM hallucination)
 * No editing interface for tweaking animations yet
 * GPU required for faster rendering
-
----
-
-## 🚩 Roadmap
-
-*
 
 ---
 
