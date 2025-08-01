@@ -1,9 +1,8 @@
 # Matra ✨
 
 <p align="center">
-  <img src="https://i.ibb.co/VW0H6nM5/Matra.png" alt="Matra Banner" width="400"/>
+  <img src="https://i.ibb.co/VW0H6nM5/Matra.png" alt="Matra Banner" width="400" height="400"/>
 </p>
-
 
 **Mathematical Animation Generator**
 
